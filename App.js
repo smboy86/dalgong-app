@@ -7,124 +7,50 @@
  */
 
 import React, {Component} from 'react';
-import {
-  TextInput,
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Alert,
-  Clipboard,
-} from 'react-native';
-import NotifService from './NotifService';
+import {Alert} from 'react-native';
+import {NavigationContainer} from '@react-navigation/native';
+import {createStackNavigator} from '@react-navigation/stack';
+import {createMaterialBottomTabNavigator} from '@react-navigation/material-bottom-tabs';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+import HomeScreen from './src/screens/Home';
+import SettingScreen from './src/screens/Setting';
+
+const Tab = createMaterialBottomTabNavigator();
 
 export default class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {};
-
-    this.notif = new NotifService(
-      this.onRegister.bind(this),
-      this.onNotif.bind(this),
-    );
-  }
-
-  copyToken = () => {
-    if (this.state.registerToken == undefined) {
-      alert('토큰 얻기 버튼을 탭하세요');
-    } else {
-      Clipboard.setString(this.state.registerToken);
-      alert('토큰 복사 완료');
-    }
-  };
-
   render() {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>달공 배송 알림앱</Text>
-        <View style={styles.spacer}></View>
-        <TouchableOpacity style={{width: '70%'}} onPress={this.copyToken}>
-          <Text style={styles.textMulti}>{this.state.registerToken}</Text>
-        </TouchableOpacity>
-        <View style={styles.spacer}></View>
-        <View style={styles.spacer}></View>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            this.notif.checkPermission(this.handlePerm.bind(this));
-          }}>
-          <Text>알림 체크</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            this.notif.requestPermissions();
-          }}>
-          <Text>Token 얻기</Text>
-        </TouchableOpacity>
-        <View style={styles.spacer}></View>
-
-        {this.state.fcmRegistered && <Text>FCM 알람 설정 성공 !</Text>}
-
-        <View style={styles.spacer}></View>
-      </View>
+      <NavigationContainer>
+        <Tab.Navigator
+          initialRouteName="Home"
+          activeColor="#f0edf6"
+          inactiveColor="#3e2465"
+          shifting={true}
+          backBehavior="none"
+          barStyle={{backgroundColor: '#694fad'}}>
+          <Tab.Screen
+            name="Home"
+            component={HomeScreen}
+            options={{
+              tabBarLabel: '홈',
+              tabBarIcon: ({color}) => (
+                <Ionicons name="md-home" size={24} color={color} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Setting"
+            component={SettingScreen}
+            options={{
+              tabBarLabel: '설정',
+              tabBarIcon: ({color}) => (
+                <Ionicons name="md-settings" size={24} color={color} />
+              ),
+            }}
+          />
+        </Tab.Navigator>
+      </NavigationContainer>
     );
   }
-
-  onRegister(token) {
-    this.setState({registerToken: token.token, fcmRegistered: true});
-  }
-
-  onNotif(notif) {
-    Alert.alert(JSON.stringify(notif.title), JSON.stringify(notif.message));
-  }
-
-  handlePerm(perms) {
-    Alert.alert('알림 허용', JSON.stringify(perms));
-  }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  button: {
-    borderWidth: 1,
-    borderColor: '#000000',
-    margin: 5,
-    padding: 5,
-    width: '70%',
-    backgroundColor: '#DDDDDD',
-    borderRadius: 5,
-  },
-  textField: {
-    borderWidth: 1,
-    borderColor: '#AAAAAA',
-    color: 'red',
-    margin: 5,
-    padding: 5,
-    width: '70%',
-  },
-  textMulti: {
-    color: 'red',
-    margin: 5,
-    padding: 5,
-    width: '100%',
-  },
-  spacer: {
-    height: 10,
-  },
-  title: {
-    fontWeight: 'bold',
-    fontSize: 20,
-    textAlign: 'center',
-  },
-});
