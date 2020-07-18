@@ -35,7 +35,13 @@ const OrderBox = styled.View`
 
 const OrderLeft = styled.View`
   width: 4px;
-  border: 3px solid ${() => (Math.round(Math.random()) ? '#F9CB47' : '#FF0000')};
+  border: 3px solid
+    ${(props) =>
+      props.state === '0'
+        ? '#FF8888'
+        : props.state === '1'
+        ? '#92d9b8'
+        : '#606060'};
 `;
 
 const OrderCenter = styled.View`
@@ -75,9 +81,12 @@ const OrderBtnBox = styled.View`
 const OrderBtn = styled(Pressable)`
   padding: 10px 24px;
   border-radius: 8px;
-  /* background-color: #92d9b8; */
-  background-color: ${() =>
-    Math.round(Math.random()) ? '#92d9b8' : '#FF8888'};
+  background-color: ${(props) =>
+    props.state === '0'
+      ? '#FF8888'
+      : props.state === '1'
+      ? '#92d9b8'
+      : '#606060'};
 `;
 
 class Home extends Component {
@@ -95,24 +104,17 @@ class Home extends Component {
   }
 
   loadOrderList = async () => {
+    //http://59.9.2.215:3000/order/getOrderListAll
     await axios
-      .get('https://randomuser.me/api/?results=10')
+      .get('http://59.9.2.215:3000/order/getOrderListAll')
       .then((response) => {
+        // console.log('loadOrderList : :: ', response.data);
+        // {order_id: 32, phone: null, memo: null, state: "0", reg_date: "2020-07-19"}
+
         this.setState({
           isLoading: false,
-          orderList: tempOrderList,
+          orderList: response.data,
         });
-      })
-      .catch((error) => {
-        console.log('error  ::: ', error);
-      });
-  };
-
-  testAxios = async () => {
-    await axios
-      .get('https://randomuser.me/api/?results=10')
-      .then((response) => {
-        console.log('axios test ::: ', response);
       })
       .catch((error) => {
         console.log('error  ::: ', error);
@@ -127,8 +129,37 @@ class Home extends Component {
     this.setState({isLoading: false});
   };
 
-  orderBtn = () => {
-    Alert.alert(null, '주문확인');
+  orderBtn = async (orderId, state) => {
+    if (state === '2') {
+      Alert.alert(null, '완료된 주문입니다.');
+    } else {
+      await axios
+        .get(
+          'http://59.9.2.215:3000/order/changeState?order_id=' +
+            orderId +
+            '&state=' +
+            (parseInt(state) + 1).toString(),
+        )
+        .then((response) => {
+          if (response.status === 200) {
+            this.loadOrderList();
+            Alert.alert(
+              null,
+              '주문 상태 변경! :: ' +
+                this.getStateName((parseInt(state) + 1).toString()),
+            );
+          } else {
+            Alert.alert(null, '시스템 오류입니다.\n관리자에게 문의해주세요');
+          }
+        })
+        .catch((error) => {
+          console.log('error  ::: ', error);
+        });
+    }
+  };
+
+  getStateName = (state) => {
+    return state === '0' ? '신규주문' : state === '1' ? '준비중' : '처리완료';
   };
 
   render() {
@@ -137,7 +168,7 @@ class Home extends Component {
         <FlatListContainer>
           <FlatList
             data={this.state.orderList}
-            keyExtractor={(item) => item.orderId}
+            keyExtractor={(item) => item.order_id.toString()}
             refreshControl={
               <RefreshControl
                 refreshing={this.state.isLoading}
@@ -147,10 +178,10 @@ class Home extends Component {
             renderItem={({item, index}) => {
               return (
                 <OrderBox>
-                  <OrderLeft />
+                  <OrderLeft state={item.state} />
                   <OrderCenter>
-                    <Text>2020</Text>
-                    <Text>07/17</Text>
+                    <Text>{item.reg_date.substring(0, 4)}</Text>
+                    <Text>{item.reg_date.substring(5)}</Text>
                   </OrderCenter>
                   <OrderRight>
                     <OrderHeader>
@@ -158,7 +189,9 @@ class Home extends Component {
                       <HeaderTitle>주문번호</HeaderTitle>
                     </OrderHeader>
                     <OrderContent>
-                      <ContentText>{item.orderTel}</ContentText>
+                      <ContentText>
+                        {item.phone == null ? '-' : item.phone}
+                      </ContentText>
                     </OrderContent>
                     <OrderHeader>
                       <MaterialIcons
@@ -169,7 +202,9 @@ class Home extends Component {
                       <HeaderTitle>메모</HeaderTitle>
                     </OrderHeader>
                     <OrderContent>
-                      <ContentText>{item.memo}</ContentText>
+                      <ContentText>
+                        {item.memo == null ? '-' : item.memo}
+                      </ContentText>
                     </OrderContent>
                     <OrderHeader>
                       <MaterialIcons
@@ -180,15 +215,13 @@ class Home extends Component {
                       <HeaderTitle>주문 내역</HeaderTitle>
                     </OrderHeader>
                     <OrderContent>
-                      <ContentText>{item.macaronList}</ContentText>
+                      <ContentText>{'----'}</ContentText>
                     </OrderContent>
                     <OrderBtnBox>
-                      <OrderBtn onPress={this.orderBtn}>
-                        <Text>
-                          {Math.round(Math.random())
-                            ? '예약 대기'
-                            : '주문 완료'}
-                        </Text>
+                      <OrderBtn
+                        onPress={() => this.orderBtn(item.order_id, item.state)}
+                        state={item.state}>
+                        <Text>{this.getStateName(item.state)}</Text>
                       </OrderBtn>
                     </OrderBtnBox>
                   </OrderRight>
